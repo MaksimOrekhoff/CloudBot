@@ -9,6 +9,7 @@
         <module>dispatcher</module>
         <module>common-rabbitmq</module>
         <module>node</module>
+        <module>common-jpa</module>
     </modules>
     <name>Archetype - CloudBot</name>
     <url>http://maven.apache.org</url>
