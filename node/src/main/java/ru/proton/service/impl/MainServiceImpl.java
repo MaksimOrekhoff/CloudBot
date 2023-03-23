@@ -7,15 +7,19 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import ru.proton.dao.AppUserDao;
 import ru.proton.dao.RawDataDAO;
+import ru.proton.entity.AppDocument;
 import ru.proton.entity.AppUser;
 import ru.proton.entity.RawData;
 import ru.proton.entity.enums.UserState;
+import ru.proton.exceptions.UploadFileException;
+import ru.proton.service.FileService;
 import ru.proton.service.MainService;
 import ru.proton.service.ProducerService;
+import ru.proton.service.enums.ServiceCommand;
 
 import static ru.proton.entity.enums.UserState.BASIC_STATE;
 import static ru.proton.entity.enums.UserState.WAIT_FOR_EMAIL_STATE;
-import static ru.proton.service.enums.ServiceCommands.*;
+import static ru.proton.service.enums.ServiceCommand.*;
 
 @Service
 @Log4j
@@ -23,11 +27,13 @@ public class MainServiceImpl implements MainService {
     private final RawDataDAO rawDataDAO;
     private final AppUserDao appUserDao;
     private final ProducerService producerService;
+    private final FileService fileService;
 
-    public MainServiceImpl(RawDataDAO rawDataDAO, AppUserDao appUserDao, ProducerService producerService) {
+    public MainServiceImpl(RawDataDAO rawDataDAO, AppUserDao appUserDao, ProducerService producerService, FileService fileService) {
         this.rawDataDAO = rawDataDAO;
         this.appUserDao = appUserDao;
         this.producerService = producerService;
+        this.fileService = fileService;
     }
 
     @Override
@@ -37,8 +43,8 @@ public class MainServiceImpl implements MainService {
         UserState state = appUser.getState();
         String text = update.getMessage().getText();
         String output = "";
-
-        if (CANCEL.equals(text)) {
+        ServiceCommand serviceCommand = ServiceCommand.fromValue(text);
+        if (CANCEL.equals(serviceCommand)) {
             output = cancelProcess(appUser);
         } else if (BASIC_STATE.equals(state)) {
             output = processServiceCommand(appUser, text);
@@ -65,9 +71,17 @@ public class MainServiceImpl implements MainService {
             return;
         }
 
-        //TODO добавить сохранения документа :)
-        String answer = "Документ успешно загружен! Ссылка для скачивания: http://test.ru/get-doc/7";
-        sendAnswer(answer, chatId);
+        try {
+            AppDocument doc = fileService.processDoc(update.getMessage());
+            //TODO Добавить генерацию ссылки для скачивания документа
+            String answer = "Документ успешно загружен! "
+                    + "Ссылка для скачивания: http://test.ru/get-doc/777";
+            sendAnswer(answer, chatId);
+        } catch (UploadFileException exception) {
+            log.error(exception);
+            String error = "К сожалению, загрузка файла не удалась. Повторите попытку позже.";
+            sendAnswer(error, chatId);
+        }
     }
 
     @Override
@@ -106,12 +120,13 @@ public class MainServiceImpl implements MainService {
     }
 
     private String processServiceCommand(AppUser appUser, String text) {
-        if (REGISTRATION.equals(text)) {
+        ServiceCommand serviceCommand = ServiceCommand.fromValue(text);
+        if (REGISTRATION.equals(serviceCommand)) {
             //TODO Add registration
             return "Временно недоступно";
-        } else if (HELP.equals(text)) {
+        } else if (HELP.equals(serviceCommand)) {
             return help();
-        } else if (START.equals(text)) {
+        } else if (START.equals(serviceCommand)) {
             return "Приветствую! Введи /help для просмотра возможносей!";
         } else {
             return "Неизвестная команда! Введи /help для просмотра возможносей!";
