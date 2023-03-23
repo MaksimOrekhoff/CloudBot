@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.User;
 import ru.proton.dao.AppUserDao;
 import ru.proton.dao.RawDataDAO;
 import ru.proton.entity.AppDocument;
+import ru.proton.entity.AppPhoto;
 import ru.proton.entity.AppUser;
 import ru.proton.entity.RawData;
 import ru.proton.entity.enums.UserState;
@@ -93,9 +94,18 @@ public class MainServiceImpl implements MainService {
             return;
         }
 
-        //TODO добавить сохранения фото :)
-        String answer = "Фото успешно загружено! Ссылка для скачивания: http://test.ru/get-photo/777";
-        sendAnswer(answer, chatId);
+
+        try {
+            AppPhoto photo = fileService.processPhoto(update.getMessage());
+            //TODO добавить генерацию ссылки для скачивания фото
+            String answer = "Фото успешно загружено! "
+                    + "Ссылка для скачивания: http://test.ru/get-photo/77";
+            sendAnswer(answer, chatId);
+        } catch (UploadFileException ex) {
+            log.error(ex);
+            String error = "К сожалению, загрузка фото не удалась. Повторите попытку позже.";
+            sendAnswer(error, chatId);
+        }
     }
 
     private boolean isNotAllowToSendContent(Long chatId, AppUser appUser) {
