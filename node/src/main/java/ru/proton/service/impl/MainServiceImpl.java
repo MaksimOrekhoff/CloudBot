@@ -16,6 +16,7 @@ import ru.proton.exceptions.UploadFileException;
 import ru.proton.service.FileService;
 import ru.proton.service.MainService;
 import ru.proton.service.ProducerService;
+import ru.proton.service.enums.LinkType;
 import ru.proton.service.enums.ServiceCommand;
 
 import static ru.proton.entity.enums.UserState.BASIC_STATE;
@@ -74,9 +75,8 @@ public class MainServiceImpl implements MainService {
 
         try {
             AppDocument doc = fileService.processDoc(update.getMessage());
-            //TODO Добавить генерацию ссылки для скачивания документа
-            String answer = "Документ успешно загружен! "
-                    + "Ссылка для скачивания: http://test.ru/get-doc/777";
+            String link = fileService.generateLink(doc.getId(), LinkType.GET_DOC);
+            String answer = "Документ успешно загружен! Ссылка для скачивания: " + link;
             sendAnswer(answer, chatId);
         } catch (UploadFileException exception) {
             log.error(exception);
@@ -93,13 +93,10 @@ public class MainServiceImpl implements MainService {
         if (isNotAllowToSendContent(chatId, appUser)) {
             return;
         }
-
-
         try {
             AppPhoto photo = fileService.processPhoto(update.getMessage());
-            //TODO добавить генерацию ссылки для скачивания фото
-            String answer = "Фото успешно загружено! "
-                    + "Ссылка для скачивания: http://test.ru/get-photo/77";
+            String link = fileService.generateLink(photo.getId(), LinkType.GET_PHOTO);
+            String answer = "Фото успешно загружено! Ссылка для скачивания: " + link;
             sendAnswer(answer, chatId);
         } catch (UploadFileException ex) {
             log.error(ex);

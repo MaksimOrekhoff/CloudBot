@@ -11,6 +11,7 @@
         <module>node</module>
         <module>common-jpa</module>
         <module>rest-service</module>
+        <module>common-utils</module>
     </modules>
     <name>Archetype - CloudBot</name>
     <url>http://maven.apache.org</url>

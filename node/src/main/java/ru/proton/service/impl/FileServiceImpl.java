@@ -17,6 +17,8 @@ import ru.proton.entity.AppPhoto;
 import ru.proton.entity.BinaryContent;
 import ru.proton.exceptions.UploadFileException;
 import ru.proton.service.FileService;
+import ru.proton.service.enums.LinkType;
+import ru.proton.utils.CryptoTool;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,11 +34,17 @@ public class FileServiceImpl implements FileService {
     private String fileStorageUri;
     @Value("${service.file_info.uri}")
     private String fileInfoUri;
+
+    @Value("${link.address}")
+    private String linkAddress;
+    private final CryptoTool cryptoTool;
     private final BinaryContentDao binaryContentDAO;
     private final AppDocumentDao appDocumentDAO;
     private final AppPhotoDao appPhotoDao;
 
-    public FileServiceImpl(BinaryContentDao binaryContentDAO, AppDocumentDao appDocumentDAO, AppPhotoDao appPhotoDao) {
+    public FileServiceImpl(CryptoTool cryptoTool, BinaryContentDao binaryContentDAO, AppDocumentDao appDocumentDAO,
+                           AppPhotoDao appPhotoDao) {
+        this.cryptoTool = cryptoTool;
         this.binaryContentDAO = binaryContentDAO;
         this.appDocumentDAO = appDocumentDAO;
         this.appPhotoDao = appPhotoDao;
@@ -74,8 +82,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public AppPhoto processPhoto(Message message) {
-        //TODO пока что обрабатываем только одно фото в сообщении
-        PhotoSize telegramPhoto = message.getPhoto().get(0);
+        int photoSizeCount = message.getPhoto().size();
+        int photoIndex = photoSizeCount > 1 ? message.getPhoto().size() - 1 : 0;
+        PhotoSize telegramPhoto = message.getPhoto().get(photoIndex);
         String fileId = telegramPhoto.getFileId();
         ResponseEntity<String> response = getFilePath(fileId);
         if (response.getStatusCode() == HttpStatus.OK) {
@@ -85,6 +94,12 @@ public class FileServiceImpl implements FileService {
         } else {
             throw new UploadFileException("Bad response from telegram service: " + response);
         }
+    }
+
+    @Override
+    public String generateLink(Long docId, LinkType linkType) {
+        String hash = cryptoTool.hashOf(docId);
+        return "http://" + linkAddress + "/" + linkType + "?id=" + hash;
     }
 
     private AppPhoto buildTransientAppPhoto(PhotoSize telegramPhoto, BinaryContent persistentBinaryContent) {

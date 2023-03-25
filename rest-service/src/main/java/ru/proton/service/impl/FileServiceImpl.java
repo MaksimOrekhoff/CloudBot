@@ -10,6 +10,7 @@ import ru.proton.entity.AppDocument;
 import ru.proton.entity.AppPhoto;
 import ru.proton.entity.BinaryContent;
 import ru.proton.service.FileService;
+import ru.proton.utils.CryptoTool;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,23 +20,29 @@ import java.io.IOException;
 public class FileServiceImpl implements FileService {
     private final AppDocumentDao appDocumentDao;
     private final AppPhotoDao appPhotoDao;
+    private final CryptoTool cryptoTool;
 
-    public FileServiceImpl(AppDocumentDao appDocumentDao, AppPhotoDao appPhotoDao) {
+    public FileServiceImpl(AppDocumentDao appDocumentDao, AppPhotoDao appPhotoDao, CryptoTool cryptoTool) {
         this.appDocumentDao = appDocumentDao;
         this.appPhotoDao = appPhotoDao;
+        this.cryptoTool = cryptoTool;
     }
 
     @Override
-    public AppDocument getDoc(String idDoc) {
-        //TODO add дешифратор хэш-строки
-        Long id = Long.parseLong(idDoc);
+    public AppDocument getDoc(String hash) {
+        Long id = cryptoTool.ofId(hash);
+        if (id == null) {
+            return null;
+        }
         return appDocumentDao.findById(id).orElse(null);
     }
 
     @Override
-    public AppPhoto getPhoto(String idPhoto) {
-        //TODO add дешифратор хэш-строки
-        Long id = Long.parseLong(idPhoto);
+    public AppPhoto getPhoto(String hash) {
+        Long id =  cryptoTool.ofId(hash);
+        if (id == null) {
+            return null;
+        }
         return appPhotoDao.findById(id).orElse(null);
     }
 
