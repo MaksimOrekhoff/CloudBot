@@ -59,7 +59,7 @@ public class UpdateController {
     }
 
     private void setFileIsReceivedView(Update update) {
-        SendMessage sendMessage = messageUtils.sendMessage(update, "Файл получени. Не нужно нервничать.");
+        SendMessage sendMessage = messageUtils.sendMessage(update, "Файл получен. Идет сохранение на сервер.");
         setView(sendMessage);
     }
 

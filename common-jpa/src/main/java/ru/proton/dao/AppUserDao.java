@@ -3,7 +3,10 @@ package ru.proton.dao;
 import org.springframework.data.jpa.repository.JpaRepository;
 import ru.proton.entity.AppUser;
 
-public interface AppUserDao extends JpaRepository<AppUser, Long> {
+import java.util.Optional;
 
-AppUser findAppUsersByTelegramUserId(Long id);
+public interface AppUserDao extends JpaRepository<AppUser, Long> {
+    Optional<AppUser> findByTelegramUserId(Long id);
+    Optional<AppUser> findById(Long id);
+    Optional<AppUser> findByEmail(String email);
 }

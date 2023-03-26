@@ -5,8 +5,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.proton.dto.MailParams;
 import ru.proton.service.MailSenderService;
+import ru.proton.utils.dto.MailParams;
 
 @RequestMapping("/mail")
 @RestController

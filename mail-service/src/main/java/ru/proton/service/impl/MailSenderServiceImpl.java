@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import ru.proton.dto.MailParams;
 import ru.proton.service.MailSenderService;
+import ru.proton.utils.dto.MailParams;
 
 @Service
 public class MailSenderServiceImpl implements MailSenderService {

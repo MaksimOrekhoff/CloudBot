@@ -13,11 +13,14 @@ import ru.proton.entity.AppUser;
 import ru.proton.entity.RawData;
 import ru.proton.entity.enums.UserState;
 import ru.proton.exceptions.UploadFileException;
+import ru.proton.service.AppUserService;
 import ru.proton.service.FileService;
 import ru.proton.service.MainService;
 import ru.proton.service.ProducerService;
 import ru.proton.service.enums.LinkType;
 import ru.proton.service.enums.ServiceCommand;
+
+import java.util.Optional;
 
 import static ru.proton.entity.enums.UserState.BASIC_STATE;
 import static ru.proton.entity.enums.UserState.WAIT_FOR_EMAIL_STATE;
@@ -30,12 +33,14 @@ public class MainServiceImpl implements MainService {
     private final AppUserDao appUserDao;
     private final ProducerService producerService;
     private final FileService fileService;
+    private final AppUserService appUserService;
 
-    public MainServiceImpl(RawDataDAO rawDataDAO, AppUserDao appUserDao, ProducerService producerService, FileService fileService) {
+    public MainServiceImpl(RawDataDAO rawDataDAO, AppUserDao appUserDao, ProducerService producerService, FileService fileService, AppUserService appUserService) {
         this.rawDataDAO = rawDataDAO;
         this.appUserDao = appUserDao;
         this.producerService = producerService;
         this.fileService = fileService;
+        this.appUserService = appUserService;
     }
 
     @Override
@@ -44,14 +49,14 @@ public class MainServiceImpl implements MainService {
         AppUser appUser = findOrSaveAppUser(update);
         UserState state = appUser.getState();
         String text = update.getMessage().getText();
-        String output = "";
+        String output;
         ServiceCommand serviceCommand = ServiceCommand.fromValue(text);
         if (CANCEL.equals(serviceCommand)) {
             output = cancelProcess(appUser);
         } else if (BASIC_STATE.equals(state)) {
             output = processServiceCommand(appUser, text);
         } else if (WAIT_FOR_EMAIL_STATE.equals(state)) {
-            //TODO добавить обработку почты
+            output = appUserService.setEmail(appUser, text);
         } else {
             log.debug("Unknown user state: " + state);
             output = "Неизвестная команда. Введите /cancel и попробуйте снова!";
@@ -129,14 +134,13 @@ public class MainServiceImpl implements MainService {
     private String processServiceCommand(AppUser appUser, String text) {
         ServiceCommand serviceCommand = ServiceCommand.fromValue(text);
         if (REGISTRATION.equals(serviceCommand)) {
-            //TODO Add registration
-            return "Временно недоступно";
+            return appUserService.registerUser(appUser);
         } else if (HELP.equals(serviceCommand)) {
             return help();
         } else if (START.equals(serviceCommand)) {
             return "Приветствую! Введи /help для просмотра возможносей!";
         } else {
-            return "Неизвестная команда! Введи /help для просмотра возможносей!";
+            return "Неизвестная команда! Введи /help для просмотра возможностей!";
         }
     }
 
@@ -162,19 +166,18 @@ public class MainServiceImpl implements MainService {
     private AppUser findOrSaveAppUser(Update update) {
         User telegramUser = update.getMessage().getFrom();
 
-        AppUser persistentAppUser = appUserDao.findAppUsersByTelegramUserId(telegramUser.getId());
-        if (persistentAppUser == null) {
+        Optional<AppUser> persistentAppUser = appUserDao.findByTelegramUserId(telegramUser.getId());
+        if (persistentAppUser.isEmpty()) {
             AppUser transientAppUser = AppUser.builder()
                     .telegramUserId(telegramUser.getId())
                     .userName(telegramUser.getUserName())
                     .firstName(telegramUser.getFirstName())
                     .lastName(telegramUser.getLastName())
-                    //TODO изменить значение по умолчанию после добавления регистрации
-                    .isActive(true)
+                    .isActive(false)
                     .state(BASIC_STATE)
                     .build();
             return appUserDao.save(transientAppUser);
         }
-        return persistentAppUser;
+        return persistentAppUser.get();
     }
 }
